@@ -20,13 +20,13 @@ import os
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--work_dir", type=str, default=r"D:\workSpace\SAM-GAN\workdir", help="work dir")
-    parser.add_argument("--run_name", type=str, default="LiTS_GT_sam-med2d-2.5D_GAN", help="run model name")
+    parser.add_argument("--work_dir", type=str, default=r"workdir", help="work dir")
+    parser.add_argument("--run_name", type=str, default="GTV-SAMGAN", help="run model name")
     parser.add_argument("--epochs", type=int, default=120, help="number of epochs")
     parser.add_argument("--batch_size", type=int, default=4, help="train batch size")
     parser.add_argument("--image_size", type=int, default=256, help="image_size")
     parser.add_argument("--mask_num", type=int, default=5, help="get mask number")
-    parser.add_argument("--data_path", type=str, default=r"D:\workSpace\dataset\Task03_Liver\SIF-SAMGAN_LiTS_data\divided_dataset", help="train data path") 
+    parser.add_argument("--data_path", type=str, default=r"data_demo", help="train data path") 
     parser.add_argument("--metrics", nargs='+', default=['iou', 'dice'], help="metrics")
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
@@ -34,10 +34,7 @@ def parse_args():
     parser.add_argument("--model_type", type=str, default="vit_b", help="sam model_type")
     
     
-    parser.add_argument("--sam_checkpoint", type=str, default=r"D:\workSpace\SAM-GAN\pretrain_model\sam-med2d_b.pth", help="sam checkpoint")
-
-    #parser.add_argument("--sam_checkpoint", type=str, default=r"D:\SAM-Med2D-main\workdir\models\sam-med2d-2.5D_Ablation\epoch54_batch200_sam.pth", help="sam checkpoint")
-
+    parser.add_argument("--sam_checkpoint", type=str, default=r"pretrain_model/sam-med2d_b.pth", help="sam checkpoint")
 
     parser.add_argument("--iter_point", type=int, default=8, help="point iterations")
     parser.add_argument('--lr_scheduler', type=str, default=None, help='lr scheduler')
@@ -80,12 +77,12 @@ def compute_gradient_penalty(D, real_samples, fake_samples):
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
     return gradient_penalty
 
-# 模型定义
+#Discriminato Definition
 class Discriminator(nn.Module):
     def __init__(self, output_features=1):
         super(Discriminator, self).__init__()
         self.model = nn.Sequential(
-            nn.Linear(1 * 256 * 256, 512),  # 假设输入图像平铺后的大小为65536
+            nn.Linear(1 * 256 * 256, 512),  
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 256),
             nn.LeakyReLU(0.2, inplace=True),
@@ -159,185 +156,19 @@ def prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_ite
 
     masks = F.interpolate(low_res_masks,(args.image_size, args.image_size), mode="bilinear", align_corners=False,)
     
-    
-    
-    
-    #添加unet
-    #masks= model.unet(masks)
-    
-    
-    #print('masks=',masks.shape)
     return masks, low_res_masks, iou_predictions
 
 
-# def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion, discriminator,optimizer_G, optimizer_D ):
-#     train_loader = tqdm(train_loader)
-#     train_losses = []
-#     train_iter_metrics = [0] * len(args.metrics)
-    
-#     for batch, batched_input in enumerate(train_loader):
-#         optimizer_D.zero_grad()
-#         #optimizer_G.zero_grad()
-#         batched_input = stack_dict_batched(batched_input)
-#         batched_input = to_device(batched_input, args.device)
-        
-#         if random.random() > 0.5:
-#             batched_input["point_coords"] = None
-#             flag = "boxes"
-#         else:
-#             batched_input["boxes"] = None
-#             flag = "point"
 
-#         for n, value in model.image_encoder.named_parameters():
-#             if "Adapter" in n:
-#                 value.requires_grad = True
-#             else:
-#                 value.requires_grad = False
-
-#         if args.use_amp:
-#             labels = batched_input["label"].half()
-#             image_embeddings = model.image_encoder(batched_input["image"].half())
-#             print('image_embeddings',image_embeddings.shape)
-#             B, _, _, _ = image_embeddings.shape
-#             image_embeddings_repeat = []
-#             for i in range(B):
-#                 image_embed = image_embeddings[i]
-#                 image_embed = image_embed.repeat(args.mask_num, 1, 1, 1)
-#                 image_embeddings_repeat.append(image_embed)
-#             image_embeddings = torch.cat(image_embeddings_repeat, dim=0)
-#             #print('-----------------------------------------加载混合精度模式---------------------------------------')
-#             masks, low_res_masks, iou_predictions = prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_iter = False)
-#             loss = criterion(masks, labels, iou_predictions)
-#             with amp.scale_loss(loss, optimizer) as scaled_loss:
-#                 scaled_loss.backward(retain_graph=False)
-
-#         else:
-#             labels = batched_input["label"]
-#             real_labels=labels
-#             real_validity = discriminator(real_labels)
-
-#             image_embeddings = model.image_encoder(batched_input["image"])
-#             #print('image_embeddings',image_embeddings.shape)
-#             B, _, _, _ = image_embeddings.shape
-#             image_embeddings_repeat = []
-#             for i in range(B):
-#                 image_embed = image_embeddings[i]
-#                 image_embed = image_embed.repeat(args.mask_num, 1, 1, 1)
-#                 image_embeddings_repeat.append(image_embed)
-#             image_embeddings = torch.cat(image_embeddings_repeat, dim=0)
-#             #print('image_embeddings_2',image_embeddings.shape)
-#             masks, low_res_masks, iou_predictions = prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_iter = False)
-#             fake_labels1 = masks
-            
-            
-#             fake_validity1 = discriminator(fake_labels1)
-#             # Gradient penalty
-#             gradient_penalty = compute_gradient_penalty(discriminator, real_labels.data, fake_labels1.data)
-#             # Adversarial loss
-#             d_loss = 1-torch.mean(real_validity) + torch.mean(fake_validity1) + 10 * gradient_penalty
-            
-            
-#             d_loss.backward()
-#             optimizer_D.step()
-            
-
-#             G_loss= 1-torch.mean(fake_validity1)
-#             loss = criterion(fake_labels1, labels, iou_predictions)+ G_loss
-#             #loss = criterion(masks, labels, iou_predictions)
-#             #loss.backward(retain_graph=False)
-#             loss.backward(retain_graph=True)
-            
-
-#         optimizer_G.step()
-#         optimizer_G.zero_grad()
-
-# ###清理缓存
-#         torch.cuda.empty_cache()
-
-
-
-
-
-
-#         if int(batch+1) % 50 == 0:
-#             print(f'Epoch: {epoch+1}, Batch: {batch+1}, first {flag} prompt: {SegMetrics(masks, labels, args.metrics)}')
-
-#         point_num = random.choice(args.point_list)
-#         batched_input = generate_point(masks, labels, low_res_masks, batched_input, point_num)
-#         batched_input = to_device(batched_input, args.device)
-    
-#         image_embeddings = image_embeddings.detach().clone()
-#         for n, value in model.named_parameters():
-#             if "image_encoder" in n:
-#                 value.requires_grad = False
-#             else:
-#                 value.requires_grad = True
-
-#         init_mask_num = np.random.randint(1, args.iter_point - 1)
-#         for iter in range(args.iter_point):
-#             if iter == init_mask_num or iter == args.iter_point - 1:
-#                 batched_input = setting_prompt_none(batched_input)
-
-#             if args.use_amp:
-#                 masks, low_res_masks, iou_predictions = prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_iter=True)
-#                 loss = criterion(masks, labels, iou_predictions)
-#                 with amp.scale_loss(loss,  optimizer) as scaled_loss:
-#                     scaled_loss.backward(retain_graph=True)
-#             else:
-#                 masks, low_res_masks, iou_predictions = prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_iter=True)
-#                 fake_labels1 = masks
-            
-            
-#                 fake_validity1 = discriminator(fake_labels1)
-                
-#                 G_loss= 1-torch.mean(fake_validity1)
-#                 loss = criterion(masks, labels, iou_predictions)+ G_loss
-#                 loss.backward(retain_graph=True)
-                
-#             optimizer_G.step()
-#             optimizer_G.zero_grad()
-          
-# ###清理缓存
-#             torch.cuda.empty_cache()
-
-
-
-#             if iter != args.iter_point - 1:
-#                 point_num = random.choice(args.point_list)
-#                 batched_input = generate_point(masks, labels, low_res_masks, batched_input, point_num)
-#                 batched_input = to_device(batched_input, args.device)
-       
-#             if int(batch+1) % 50 == 0:
-#                 if iter == init_mask_num or iter == args.iter_point - 1:
-#                     print(f'Epoch: {epoch+1}, Batch: {batch+1}, mask prompt: {SegMetrics(masks, labels, args.metrics)}')
-#                 else:
-#                     print(f'Epoch: {epoch+1}, Batch: {batch+1}, point {point_num} prompt: { SegMetrics(masks, labels, args.metrics)}')
-
-#         if int(batch+1) % 200 == 0:
-#             print(f"epoch:{epoch+1}, iteration:{batch+1}, loss:{loss.item()}")
-#             save_path = os.path.join(f"{args.work_dir}/models", args.run_name, f"epoch{epoch+1}_batch{batch+1}_sam.pth")
-#             state = {'model': model.state_dict(), 'optimizer': optimizer}
-#             torch.save(state, save_path)
-
-#         train_losses.append(loss.item())
-
-#         gpu_info = {}
-#         gpu_info['gpu_name'] = args.device 
-#         train_loader.set_postfix(train_loss=loss.item(), gpu_info=gpu_info)
-
-#         train_batch_metrics = SegMetrics(masks, labels, args.metrics)
-#         train_iter_metrics = [train_iter_metrics[i] + train_batch_metrics[i] for i in range(len(args.metrics))]
-
-#     return train_losses, train_iter_metrics
 def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion, discriminator, optimizer_G, optimizer_D):
     train_loader = tqdm(train_loader)
     train_losses = []
-    train_iter_metrics = [0] * len(args.metrics)  # 确保这与你的度量数量相匹配
-    discriminator_steps = 5 # 指定每训练5次判别器后训练一次生成器 
+    train_iter_metrics = [0] * len(args.metrics)  
+    discriminator_steps = 5 
     discriminator_count = 0 
     for batch, batched_input in enumerate(train_loader):
-        batched_input = stack_dict_batched(batched_input)  # 假设的函数，你需要根据你的数据结构自定义
-        batched_input = to_device(batched_input, args.device)  # 将数据移至正确的设备
+        batched_input = stack_dict_batched(batched_input)  
+        batched_input = to_device(batched_input, args.device)  
 
         if random.random() > 0.5:
             batched_input["point_coords"] = None
@@ -381,13 +212,10 @@ def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion, disc
             train_losses.append(total_loss.item())
 
         # Calculate metrics for batch
-        batch_metrics = SegMetrics(masks, labels, args.metrics)  # 你需要定义这个函数
+        batch_metrics = SegMetrics(masks, labels, args.metrics)  
         train_iter_metrics = [train_iter_metrics[i] + batch_metrics[i] for i in range(len(args.metrics))]
 
         if (batch + 1) % 50 == 0:
-            #print(f'Epoch: {epoch+1}, Batch: {batch+1}, Loss: {total_loss.item()}, Metrics: {batch_metrics}')
-            # 假设 args.metrics 是一个包含度量名称的列表，例如 ['accuracy', 'loss', 'iou']
-            # 并且 batch_metrics 是一个 numpy 数组，其中包含这些度量的值
             if isinstance(batch_metrics, np.ndarray):
                 batch_metrics_str = ", ".join([f"{name}: {value:.4f}" for name, value in zip(args.metrics, batch_metrics)])
                 print(f'Epoch: {epoch+1}, Batch: {batch+1}, Loss: {total_loss.item():.4f}, Metrics: {batch_metrics_str}')
@@ -415,7 +243,7 @@ def main(args):
     generator = model
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     criterion = FocalDiceloss_IoULoss()
-    # 定义优化器
+    # Define the Optimizer
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
     if args.lr_scheduler:
@@ -434,11 +262,6 @@ def main(args):
         print("*******Mixed precision with Apex")
     else:
         print('*******Do not use mixed precision')
-
-    # 检查并打印 image_encoder 的参数及其 requires_grad 状态 
-    # for n, value in model.image_encoder.named_parameters(): 
-    #     print(f"Parameter: {n}, requires_grad: {value.requires_grad}")
-    
 
     train_dataset = TrainingDataset(args.data_path, image_size=args.image_size, point_num=1,  requires_name = False)
     train_loader = DataLoader(train_dataset, batch_size = args.batch_size, shuffle=True, num_workers=4)
@@ -460,37 +283,18 @@ def main(args):
             scheduler.step()
 
         
-        # 正确计算 train_metrics
+
         train_metrics = {args.metrics[i]: train_iter_metrics[i] / len(train_loader) for i in range(len(train_iter_metrics))}
         
-
-        # 安全地转换为字符串用于显示
         train_metrics_str = {k: f"{v:.4f}" if isinstance(v, (int, float)) else v for k, v in train_metrics.items()}
        
-        #train_iter_metrics = [metric / l for metric in train_iter_metrics]
-        #train_metrics = {args.metrics[i]: '{:.4f}'.format(train_iter_metrics[i]) for i in range(len(train_iter_metrics))}
-        #train_metrics_str = {k: f"{v:.4f}" for k, v in train_metrics.items()} 
-        current_dice = float(train_metrics['dice']) # 确保'dice'是度量名称之一 
+
+        current_dice = float(train_metrics['dice'])
         
         average_loss = np.mean(train_losses)
         lr = scheduler.get_last_lr()[0] if args.lr_scheduler is not None else args.lr
         loggers.info(f"epoch: {epoch + 1}, lr: {lr}, Train loss: {average_loss:.4f}, metrics: {train_metrics_str}")
 
-        # # 检查是否达到新的最高Dice系数
-        # if current_dice > best_dice:
-        #     best_dice = current_dice
-        #     save_path = os.path.join(args.work_dir, "models", args.run_name, f"epoch{epoch+1}_best_dice.pth")
-        #     state = {'model': model.float().state_dict(), 'optimizer': optimizer.state_dict()}
-        #     torch.save(state, save_path)
-        #     loggers.info(f"New best dice score: {best_dice:.4f} saved to {save_path}")
-        #     if args.use_amp:
-        #         model = model.half()
-        ##最佳loss保存
-        #if average_loss < best_loss:
-        #    best_loss = average_loss
-        #    save_path = os.path.join(args.work_dir, "models", args.run_name, f"epoch{epoch+1}_sam.pth")
-        #    state = {'model': model.float().state_dict(), 'optimizer': optimizer}
-        #    torch.save(state, save_path)
         save_path = os.path.join(args.work_dir, "models", args.run_name, f"epoch{epoch+1}_sam.pth")
         state = {'model': model.float().state_dict(),'optimizer': optimizer}
         torch.save(state, save_path)
