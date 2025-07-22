@@ -4,34 +4,32 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
-# 全局最小矩形框的坐标
+# Coordinates of the Global Minimum Bounding Rectangle
 global_min_x, global_min_y = 48, 13
 global_max_x, global_max_y = 512, 512
 
-# 创建输出目录如果不存在
-output_dir = r"D:\workSpace\cnet\inputs\\CT\\test_GT_detection"
+
+output_dir = r"test_GT_detection"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-# 获取图像文件名列表，并初始化进度条
-image_files = [filename for filename in os.listdir("D:\workSpace\data\labelsTr2_GT") if filename.endswith(".png")]
+image_files = [filename for filename in os.listdir("labelsTr_GT") if filename.endswith(".png")]
 pbar = tqdm(image_files)
 
-# 遍历图像目录
 for filename in pbar:
     pbar.set_description(f"Processing {filename}")
-    img_path = os.path.join("D:\workSpace\data\labelsTr2_GT", filename)
+    img_path = os.path.join("labelsTr_GT", filename)
     
-    # 使用PIL读取图像并转换为彩色图（RGB模式）
+  
     img = Image.open(img_path).convert('RGB')
     img = np.array(img)
     
-    # 使用OpenCV绘制矩形框
-    color = (0, 255, 0)  # 绿色
+
+    color = (0, 255, 0)  
     thickness = 2
     img = cv2.rectangle(img, (global_min_x, global_min_y), (global_max_x, global_max_y), color, thickness)
     
-    # 保存绘制了矩形框的图像
+    # Save the Image with the Drawn Rectangle
     output_path = os.path.join(output_dir, filename)
     cv2.imwrite(output_path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
