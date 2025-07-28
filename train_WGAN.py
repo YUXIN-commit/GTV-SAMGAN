@@ -2,7 +2,7 @@ from segment_anything import sam_model_registry, SamPredictor
 import torch.nn as nn
 import torch
 import argparse
-from torch import autograd # 导入autograd
+from torch import autograd 
 from torch import optim
 from torch.utils.data import DataLoader
 from DataLoader import TrainingDataset, stack_dict_batched
@@ -13,7 +13,7 @@ from tqdm import tqdm
 import numpy as np
 import datetime
 from torch.nn import functional as F
-#from apex import amp
+from apex import amp
 import random
 import os
 
@@ -77,7 +77,6 @@ def compute_gradient_penalty(D, real_samples, fake_samples):
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
     return gradient_penalty
 
-#Discriminato Definition
 class Discriminator(nn.Module):
     def __init__(self, output_features=1):
         super(Discriminator, self).__init__()
@@ -94,12 +93,6 @@ class Discriminator(nn.Module):
         validity = self.model(img_flat)
         return torch.sigmoid(validity)
     
-
-
-
-
-
-
 
 def to_device(batch_input, device):
     device_input = {}
