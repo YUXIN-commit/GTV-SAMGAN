@@ -229,4 +229,6 @@ def main(args):
 #Test a single model parameter file.
 if __name__ == '__main__':
    args = parse_args()
+   pth_file = r"workdir\GTV-SAMGAN_model"
+   args.sam_checkpoint = pth_file 
    main(args)     
