@@ -68,7 +68,7 @@ import os
 #         noise_boxes.append((x0, y0, x1, y1))
 #     return torch.as_tensor(noise_boxes, dtype=torch.float)
 
-## 处理空框情况，使用整个图像作为默认框
+## Handle empty bounding boxes by using the entire image as the default box.
 def get_boxes_from_mask(mask, image_path=None, box_num=1, std=0.1, max_pixel=5):
     """
     Args:
@@ -82,38 +82,37 @@ def get_boxes_from_mask(mask, image_path=None, box_num=1, std=0.1, max_pixel=5):
     """
     if isinstance(mask, torch.Tensor):
         mask = mask.numpy()
-    
-    # 获取图像尺寸作为默认边界框备用
+
     h, w = mask.shape
     default_box = (0, 0, h, w)  # (min_row, min_col, max_row, max_col)
     
     label_img = label(mask)
     regions = regionprops(label_img)
-    # 获取所有区域的边界框
-    ## 如果没有检测到任何连通区域，boxes为空列表
+
+    # If no connected components are detected, boxes will be an empty list.
     boxes = [tuple(region.bbox) for region in regions]
-    # 如果区域数量超过需要的框数，按面积排序并选择最大的
+  
     if len(boxes) >= box_num:
         sorted_regions = sorted(regions, key=lambda x: x.area, reverse=True)[:box_num]
         boxes = [tuple(region.bbox) for region in sorted_regions]
-    # 如果区域数量不足，处理空框或重复现有框
+    
     elif len(boxes) < box_num:
-        # 处理空框情况
+        # Handle the case of empty bounding boxes.
         if len(boxes) == 0:
             if image_path:
                 print(f"Warning: No objects found in mask {image_path}, using default box")
-            boxes = [default_box] * box_num  # 使用整个图像作为默认框
+            boxes = [default_box] * box_num  # Use the entire image as the default bounding box.
         else:
-            # 复制现有框直到达到需要的数量
+          
             num_duplicates = box_num - len(boxes)
             boxes += [boxes[i % len(boxes)] for i in range(num_duplicates)]
-    # 对每个边界框添加噪声扰动
+  
     noise_boxes = []
     for box in boxes:
         y0, x0, y1, x1 = box
         width, height = abs(x1 - x0), abs(y1 - y0)
         
-        # 计算噪声参数
+       
         try:
             noise_std = min(width, height) * std
             max_noise = min(max_pixel, int(noise_std * 5))
@@ -121,7 +120,6 @@ def get_boxes_from_mask(mask, image_path=None, box_num=1, std=0.1, max_pixel=5):
             noise_std = 1
             max_noise = max_pixel
         
-        # 添加随机噪声到每个坐标
         try:
             noise_x = np.random.randint(-max_noise, max_noise)
         except:
@@ -131,7 +129,6 @@ def get_boxes_from_mask(mask, image_path=None, box_num=1, std=0.1, max_pixel=5):
         except:
             noise_y = 0
         
-        # 应用噪声并确保坐标在图像范围内
         x0 = max(0, x0 + noise_x)
         y0 = max(0, y0 + noise_y)
         x1 = min(w, x1 + noise_x)
@@ -303,8 +300,8 @@ def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None,
     preds[preds <= 0.5] = int(0)
 
     mask = preds.squeeze().cpu().numpy()
-    #mask = cv2.cvtColor(mask * 255, cv2.COLOR_GRAY2BGR)  #将图像转换为三通道
-    mask = mask * 255             #单通道（灰度图像）图像，将图像二值化
+    #mask = cv2.cvtColor(mask * 255, cv2.COLOR_GRAY2BGR)  #Convert the image to three channels.
+    mask = mask * 255             #For single‑channel (grayscale) images, binarize the image.
 
     if visual_prompt: #visualize the prompt
         if boxes is not None:
@@ -409,7 +406,6 @@ class MaskIoULoss(nn.Module):
         iou_loss = torch.mean((iou - pred_iou) ** 2)
         return iou_loss
 
-#结合了三种loss
 class FocalDiceloss_IoULoss(nn.Module):  
     
     def __init__(self, weight=20.0, iou_scale=1.0):
@@ -420,10 +416,9 @@ class FocalDiceloss_IoULoss(nn.Module):
         self.dice_loss = DiceLoss()
         self.maskiou_loss = MaskIoULoss()
     
-    #前向传播
     def forward(self, pred, mask, pred_iou):
         """
-        pred: [B, 1, H, W] 模型的预测输出
+        pred: [B, 1, H, W] 
         mask: [B, 1, H, W]
         """
         assert pred.shape == mask.shape, "pred and mask should have the same shape."
