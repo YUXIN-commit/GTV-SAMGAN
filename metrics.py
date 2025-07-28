@@ -22,7 +22,6 @@ def _list_tensor(x, y):
             x = m(x)
     return x, y
 
-
 def iou(pr, gt, eps=1e-7, threshold = 0.5):
     pr_, gt_ = _list_tensor(pr, gt)
     pr_ = _threshold(pr_, threshold=threshold)
