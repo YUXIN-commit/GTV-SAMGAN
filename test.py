@@ -22,17 +22,17 @@ import albumentations
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--work_dir", type=str, default="D:\workSpace\SAM-GAN\workdir", help="work dir")
-    parser.add_argument("--run_name", type=str, default="LiTS_GT_SAM-Med2d_epoch119", help="run model name")
-    parser.add_argument("--batch_size", type=int, default=200, help="batch size")
+    parser.add_argument("--work_dir", type=str, default="workdir", help="work dir")
+    parser.add_argument("--run_name", type=str, default="GTV-SAMGAN", help="run model name")
+    parser.add_argument("--batch_size", type=int, default=1, help="batch size")
     parser.add_argument("--image_size", type=int, default=256, help="image_size")
     parser.add_argument('--device', type=str, default='cuda')
-    parser.add_argument("--data_path", type=str, default=r"D:\workSpace\paper\HCC_SIF-SAMGAN1_paper_data\LiTS_dataset_results\divided_raw_dataset", help="train data path") 
+    parser.add_argument("--data_path", type=str, default=r"data_demo", help="train data path") 
     parser.add_argument("--metrics", nargs='+', default=['iou', 'dice'], help="metrics")
     parser.add_argument("--model_type", type=str, default="vit_b", help="sam model_type")
-    parser.add_argument("--sam_checkpoint", type=str, default=r"D:\workSpace\paper\HCC_SIF-SAMGAN1_paper_data\LiTS_dataset_results\SAM-Med2D_baseline\epoch119_sam.pth", help="sam checkpoint")
+    parser.add_argument("--sam_checkpoint", type=str, default=r"pretrain_model/sam-med2d_b.pths", help="sam checkpoint")
     parser.add_argument("--boxes_prompt", type=bool, default=True, help="use boxes prompt")
-    parser.add_argument("--point_num", type=int, default=0, help="point num")
+    parser.add_argument("--point_num", type=int, default=1, help="point num")
     parser.add_argument("--iter_point", type=int, default=1, help="iter num") 
     parser.add_argument("--multimask", type=bool, default=True, help="ouput multimask")
     parser.add_argument("--encoder_adapter", type=bool, default=True, help="use adapter")
@@ -109,12 +109,7 @@ def prompt_and_decoder(args, batched_input, ddp_model, image_embeddings):
             low_res.append(low_res_masks[i:i+1, idx])
         low_res_masks = torch.stack(low_res, 0)
     masks = F.interpolate(low_res_masks,(args.image_size, args.image_size), mode="bilinear", align_corners=False,)
-
-
-    #添加unet
-    #masks= ddp_model.unet(masks)
-
-
+    
     return masks, low_res_masks, iou_predictions
 
 
@@ -164,13 +159,13 @@ def main(args):
         with torch.no_grad():
             image_embeddings = model.image_encoder(batched_input["image"])
 
-        if args.boxes_prompt:    #框提示
+        if args.boxes_prompt:    #boxes_prompt
             save_path = os.path.join(args.work_dir, args.run_name, "boxes_prompt")
             batched_input["point_coords"], batched_input["point_labels"] = None, None
             masks, low_res_masks, iou_predictions = prompt_and_decoder(args, batched_input, model, image_embeddings)
             points_show = None
 
-        else:       #点提示
+        else:       #points_prompt
             save_path = os.path.join(f"{args.work_dir}", args.run_name, f"iter{args.iter_point if args.iter_point > 1 else args.point_num}_prompt")
             batched_input["boxes"] = None
             point_coords, point_labels = [batched_input["point_coords"]], [batched_input["point_labels"]]
@@ -208,28 +203,30 @@ def main(args):
         with open(os.path.join(args.work_dir,f'{args.image_size}_prompt.json'), 'w') as f:
             json.dump(prompt_dict, f, indent=2)
     print(f"Test loss: {average_loss:.4f}, metrics: {test_metrics}")
-    # 保存结果到CSV文件 
+    # Save the results to a CSV file.
     results = {'model_name': [os.path.basename(args.sam_checkpoint)], 'average_loss': [average_loss], **test_metrics} 
     df = pd.DataFrame(results) 
-    csv_path = os.path.join(args.work_dir, '1.csv') 
+    csv_path = os.path.join(args.work_dir, 'GTV-SAMGAN.csv') 
     if not os.path.exists(csv_path): 
         df.to_csv(csv_path, index=False) 
     else: 
         df.to_csv(csv_path, mode='a', header=False, index=False) 
         print("Results saved to CSV file.")
-# ### 多个pth的循环
+
+##Test multiple model parameter files.
 # if __name__ == '__main__':
 #     args = parse_args()
 
-#     # 获取指定文件夹下的所有pth文件 
-#     model_dir = r"D:\workSpace\GitLoadWareHouse\SAM-GAN\workdir\models\33DWT_3DIRCADb_fold2"
-#     pth_files = [os.path.join(model_dir, f) for f in os.listdir(model_dir) if f.endswith('.pth')] # 逐个赋值并打印当前sam_checkpoint参数 
+#     #Get all .pth files under the specified folder.
+#     model_dir = r"workdir\models\GTV-SAMGAN"
+#     pth_files = [os.path.join(model_dir, f) for f in os.listdir(model_dir) if f.endswith('.pth')] 
 #     for pth_file in pth_files: 
 #         args.sam_checkpoint = pth_file 
-#         print(f"Current sam_checkpoint: {args.sam_checkpoint}") # 在这里添加您想要对每个sam_checkpoint进行的操作 # 比如，您可以调用训练函数或进行推理 # train(args) # 或者 infer(args)
+#         print(f"Current sam_checkpoint: {args.sam_checkpoint}")
 #         main(args)
-#     print('============================全部测试完毕，请查看csv文档==========================================================')
-#单个pth模型
+#     print('============================All tests are complete. Please check the CSV document.==========================================================')
+
+#Test a single model parameter file.
 if __name__ == '__main__':
    args = parse_args()
    main(args)     
