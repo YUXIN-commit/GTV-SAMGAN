@@ -25,7 +25,7 @@ Run the following code to install the Requirements:
 
 ### **Train**
 
-Prepare your own dataset and refer to the samples in __GTV-SAMGAN/data_demo__  to replace them according to your specific scenario. You need to generate the	__image2label_train.json__ file before running train.py.
+Prepare your own dataset and refer to the samples in `GTV-SAMGAN/data_demo`  to replace them according to your specific scenario. You need to generate the	`image2label_train.json` file before running train.py.
 
 	cd ./GTV-SAMGAN
  	python train.py
@@ -35,6 +35,8 @@ Prepare your own dataset and refer to the samples in __GTV-SAMGAN/data_demo__  t
 * data_path: Dataset directory, for example: data_demo.
 * resume: Pretrained weight file, ignore sam_checkpoint if present.
 * sam_checkpoint: Load sam checkpoint.
+* encoder_adapter: Whether to fine-tune the Adapter layer, set to False only for fine-tuning the decoder.
+* use_amp: Set whether to use mixed-precision training.
 
 #### Pretrain Weights
 We fine-tuned the pretrained model from [SAM-Med2D](https://github.com/OpenGVLab/SAM-Med2D/tree/main).
@@ -42,3 +44,59 @@ We fine-tuned the pretrained model from [SAM-Med2D](https://github.com/OpenGVLab
 The pretrained weights can be downloaded from the following link.
 Baidu Cloud: https://pan.baidu.com/s/1HWo_s8O7r4iQI6irMYU8vQ?pwd=dk5x
 Extraction code: dk5x
+
+### **Test**
+
+	cd ./GTV-SAMGAN
+ 	python test.py
+
+* work_dir: Specifies the working directory for the testing process. Default value is workdir.
+
+#### Test multiple model parameter files. 
+
+At the end of the `test.py` file, use the following code to test multiple model parameter files.
+
+`model_dir` specifies the folder containing the model parameter files to be tested.
+
+	#Test multiple model parameter files.
+ 
+	if __name__ == '__main__':
+	    args = parse_args()
+
+	    #Get all .pth files under the specified folder.
+	    model_dir = r"workdir\models\GTV-SAMGAN"
+	    pth_files = [os.path.join(model_dir, f) for f in os.listdir(model_dir) if f.endswith('.pth')] 
+	    for pth_file in pth_files: 
+	        args.sam_checkpoint = pth_file 
+	        print(f"Current sam_checkpoint: {args.sam_checkpoint}")
+	        main(args)
+	    print('============================All tests are complete. Please check the CSV document.==========================================================')
+
+After testing is complete, a `.csv` file will be generated to store the evaluation results for each model parameter.
+
+#### Test single model parameter file.
+
+At the end of the `test.py` file, use the following code to test multiple model parameter files.
+`pth_file` refers to the specific model parameter file you want to test.
+
+	#Test a single model parameter file.
+	if __name__ == '__main__':
+	   args = parse_args()
+	   pth_file = r"workdir\GTV-SAMGAN_model"
+	   args.sam_checkpoint = pth_file 
+	   main(args)       
+
+## Reference
+
+	@misc{cheng2023sammed2d,
+	      title={SAM-Med2D}, 
+	      author={Junlong Cheng and Jin Ye and Zhongying Deng and Jianpin Chen and Tianbin Li and Haoyu Wang and Yanzhou Su and
+	              Ziyan Huang and Jilong Chen and Lei Jiangand Hui Sun and Junjun He and Shaoting Zhang and Min Zhu and Yu Qiao},
+	      year={2023},
+	      eprint={2308.16184},
+	      archivePrefix={arXiv},
+	      primaryClass={cs.CV}
+	}
+
+
+
