@@ -97,6 +97,14 @@ At the end of the `test.py` file, use the following code to test multiple model 
 	      archivePrefix={arXiv},
 	      primaryClass={cs.CV}
 	}
+ 
+ 	@misc{Data From NSCLC-Radiomics (version 4),
+	      title={Data From NSCLC-Radiomics (version 4)}, 
+	      author={Aerts, H. J. W. L., Wee, L., Rios Velazquez, E., Leijenaar, R. T. H., Parmar, C., Grossmann, P., Carvalho, S., Bussink, J., Monshouwer, R., Haibe-Kains, B., Rietveld, D., Hoebers, F., Rietbergen, M. M., Leemans, C. R., Dekker, A., Quackenbush, J., Gillies, R. J., Lambin, P.},
+	      year={2014},
+	      eprint={https://doi.org/10.7937/K9/TCIA.2015.PF0M9REI},
+              archivePrefix={The Cancer Imaging Archive},
+	}
 
 
 
