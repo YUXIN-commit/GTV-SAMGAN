@@ -143,46 +143,6 @@ class TrainingDataset(Dataset):
         """
 
         image_input = {}
-    
-        # try:
-        #     # 读取图像
-        #     image = cv2.imread(self.image_paths[index])
-            
-        #     # 检查图像是否加载成功
-        #     if image is None:
-        #         raise ValueError(f"无法加载图像：{self.image_paths[index]}")
-        #     else:
-        #         print(f"图像成功加载：{self.image_paths[index]}")
-        #         print(f"原始图像尺寸和通道数：{image.shape}")
-            
-        #     # 检查通道数，确保是3通道
-        #     if len(image.shape) == 2:  # 如果是灰度图，shape只有两维
-        #         print("检测到灰度图，转换为彩色图...")
-        #         # 将灰度图转换为彩色图
-        #         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-        #         print(f"转换后的图像尺寸和通道数：{image.shape}")
-        #     elif image.shape[2] == 4:  # 如果是4通道图，即包含透明度通道
-        #         print("检测到4通道图像，移除透明度通道...")
-        #         # 移除透明度通道
-        #         image = image[:, :, :3]
-        #         print(f"转换后的图像尺寸和通道数：{image.shape}")
-        #     elif image.shape[2] != 3:  # 如果通道数不是3，也不是上述的情况
-        #         raise ValueError(f"图像通道数异常：{self.image_paths[index]} 通道数为 {image.shape[2]}")
-            
-        #     # 标准化图像
-        #     print("正在标准化图像...")
-        #     image = (image - self.pixel_mean) / self.pixel_std
-        #     print("标准化完成。")
-        # except Exception as e:
-        #     print(f"处理图像时发生错误：{self.image_paths[index]} 错误信息：{str(e)}")
-
-
-
-
-
-
-
-
 
         try:
             image = cv2.imread(self.image_paths[index])
@@ -243,23 +203,6 @@ def stack_dict_batched(batched_input):
             out_dict[k] = v.reshape(-1, *v.shape[2:])
     return out_dict
 
-#train测试
-# if __name__ == "__main__":
-#     train_dataset = TestingDataset(r"D:\SAM-Med2D-main\data\test_png_256", image_size=256, mode='test', requires_name=True, point_num=1, mask_num=5)
-#     print("Dataset:", len(train_dataset))
-#     train_batch_sampler = DataLoader(dataset=train_dataset, batch_size=1, shuffle=True, num_workers=4)
-#     for i, batched_image in enumerate(tqdm(train_batch_sampler)):
-#         batched_image = stack_dict_batched(batched_image)
-#         print(batched_image["image"].shape, batched_image["label"].shape)
 
-
-#test测试
-if __name__ == "__main__":
-    train_dataset = TestingDataset(r"D:\SAM-Med2D-main\data\test_png_256", image_size=256, mode='test', requires_name=True, point_num=1)
-    print("Dataset:", len(train_dataset))
-    train_batch_sampler = DataLoader(dataset=train_dataset, batch_size=1, shuffle=True, num_workers=4)
-    for i, batched_image in enumerate(tqdm(train_batch_sampler)):
-        batched_image = stack_dict_batched(batched_image)
-        print(batched_image["image"].shape, batched_image["label"].shape)
 
 
