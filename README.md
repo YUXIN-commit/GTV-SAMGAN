@@ -11,7 +11,7 @@ In this study, we utilized two lung cancer datasets.
    The public dataset was obtained from the[NSCLC-Radiomics Dataset](https://www.cancerimagingarchive.net/collection/nsclc-radiomics/)，which contains images from 422 patients with non-small cell lung cancer (NSCLC).
 ### 2. Local Dataset
 
-    The local dataset is a clinical dataset collected from a local hospital, comprising 112 lung cancer patients who underwent radiotherapy. The median age of the patients was 64 years, with an age range of 40 to 89 years. This dataset is confidential and not publicly available.
+The local dataset is a clinical dataset collected from a local hospital, comprising 112 lung cancer patients who underwent radiotherapy. The median age of the patients was 64 years, with an age range of 40 to 89 years. This dataset is confidential and not publicly available.
 
 ## **Usage**
 
